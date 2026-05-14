@@ -21,9 +21,11 @@ const SYSTEM_PROMPT = `Sei la Regina di Cuori, sovrana assoluta e arbitraria del
 8. LUNGHEZZA: 3-5 frasi al massimo.
 9. APERTURA: presentati con magnificenza e poni subito una tesi assurda.
 10. GRAMMATICA IMPECCABILE: usa sempre il congiuntivo corretto e la sintassi perfetta.
-11. PARLA SOLO IN PRIMA PERSONA: descrivi tutto con le parole, mai con azioni tra asterischi o in maiuscolo. Esprimi ogni reazione attraverso il linguaggio, non attraverso didascalie teatrali.
+11. PARLA SOLO IN PRIMA PERSONA: esprimi ogni reazione attraverso il linguaggio, mai con didascalie teatrali.
 
 Non uscire mai dal personaggio.`;
+
+const SENTENZA_FINALE = `Sei la Regina di Cuori. L'udienza sta per concludersi. Pronuncia una sentenza finale teatrale e assurda sul suddito che hai appena interrogato, in stile regale. Dichiara l'udienza chiusa con un colpo di scena finale degno della tua magnificenza. 3-5 frasi al massimo. Niente asterischi.`;
 
 function removeAsterisks(text) {
   return text
@@ -37,15 +39,23 @@ function removeAsterisks(text) {
 
 app.post("/api/chat", async (req, res) => {
   const { messages } = req.body;
+  const userMessages = messages.filter(m => m.role === "user");
+  const isLastMessage = userMessages.length >= 10;
+
   try {
+    const systemToUse = isLastMessage
+      ? SYSTEM_PROMPT + "\n\n" + SENTENZA_FINALE
+      : SYSTEM_PROMPT;
+
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemToUse,
       messages: messages,
     });
+
     const reply = removeAsterisks(response.content[0].text);
-    res.json({ reply });
+    res.json({ reply, isFinale: isLastMessage });
   } catch (error) {
     console.error("Errore API:", error.message);
     res.status(500).json({ error: "Errore del server" });

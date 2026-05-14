@@ -38,6 +38,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
+  const [finished, setFinished] = useState(false);
   const [dots, setDots] = useState(".");
   const [error, setError] = useState(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
@@ -75,28 +76,29 @@ export default function App() {
       body: JSON.stringify({ messages: msgs }),
     });
     if (!res.ok) throw new Error(`Errore server: ${res.status}`);
-    return (await res.json()).reply;
+    return await res.json();
   };
 
   const startAudience = async () => {
-    setError(null); setStarted(true); setLoading(true); setMessages([]);
+    setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
     try {
-      const greeting = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
-      setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:greeting }]);
+      const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
+      setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
     } catch(e) { setError(e.message); setStarted(false); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || finished) return;
     setError(null);
     const userMsg = { role:"user", content:input.trim() };
     const history = [...messages.filter(m => !m.hidden), userMsg];
     setMessages(prev => [...prev, userMsg]);
     setInput(""); setLoading(true);
     try {
-      const reply = await callBackend(history);
-      setMessages(prev => [...prev, { role:"assistant", content:reply }]);
+      const data = await callBackend(history);
+      setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
+      if (data.isFinale) setFinished(true);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
   };
@@ -114,8 +116,9 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const resetDialog = () => { setMessages([]); setStarted(false); setError(null); setInput(""); };
+  const resetDialog = () => { setMessages([]); setStarted(false); setError(null); setInput(""); setFinished(false); };
   const visible = messages.filter(m => !m.hidden);
+  const userCount = visible.filter(m => m.role === "user").length;
 
   return (
     <div style={{ height:"100vh", width:"100%", background:"radial-gradient(ellipse at center, #2a0000 0%, #0d0000 70%)", display:"flex", alignItems:"center", justifyContent:"center", padding:"clamp(10px,2vw,24px)", boxSizing:"border-box", fontFamily:ff }}>
@@ -139,43 +142,11 @@ export default function App() {
           width: 100%;
         }
         .btn-salva { position:relative; }
-        .btn-salva::after {
-          content: "Salva il dialogo";
-          position: absolute;
-          bottom: -28px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(20,0,0,0.95);
-          color: #D4AF37;
-          padding: 3px 8px;
-          border-radius: 3px;
-          font-size: 10px;
-          white-space: nowrap;
-          border: 1px solid #5a3a1a;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.2s;
-        }
-        .btn-salva:hover::after { opacity: 1; }
+        .btn-salva::after { content:"Salva il dialogo"; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:rgba(20,0,0,0.95); color:#D4AF37; padding:3px 8px; border-radius:3px; font-size:10px; white-space:nowrap; border:1px solid #5a3a1a; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+        .btn-salva:hover::after { opacity:1; }
         .btn-nuova { position:relative; }
-        .btn-nuova::after {
-          content: "Nuova udienza";
-          position: absolute;
-          bottom: -28px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(20,0,0,0.95);
-          color: #8B3333;
-          padding: 3px 8px;
-          border-radius: 3px;
-          font-size: 10px;
-          white-space: nowrap;
-          border: 1px solid #8B1A1A;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.2s;
-        }
-        .btn-nuova:hover::after { opacity: 1; }
+        .btn-nuova::after { content:"Nuova udienza"; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:rgba(20,0,0,0.95); color:#8B3333; padding:3px 8px; border-radius:3px; font-size:10px; white-space:nowrap; border:1px solid #8B1A1A; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+        .btn-nuova:hover::after { opacity:1; }
         body { margin:0; padding:0; background:#0d0000; }
       `}</style>
 
@@ -198,10 +169,26 @@ export default function App() {
 
           {error && <div style={{ marginBottom:8, background:"rgba(180,0,0,0.3)", border:"1px solid #C0392B", borderRadius:6, padding:"8px 14px", color:"#ff9999", fontSize:13, fontStyle:"italic", flexShrink:0 }}>⚠ {error}</div>}
 
-          <div style={{ borderTop:"1px solid #3d0000", borderBottom:"1px solid #3d0000", marginBottom:8, flexShrink:0, padding:"clamp(8px,2vw,14px) 0", position:"relative" }}>
-            <span className="fire-title" style={{ fontSize:"clamp(22px,5vw,44px)" }}>
+          <div style={{ borderTop:"1px solid #3d0000", borderBottom:"1px solid #3d0000", marginBottom:8, flexShrink:0, padding:"clamp(6px,1.5vw,10px) 0", position:"relative" }}>
+            <span className="fire-title" style={{ fontSize:"clamp(20px,4.5vw,40px)" }}>
               ♥ &nbsp; Udienza Reale &nbsp; ♥
             </span>
+
+            {/* Contatore pallini */}
+            {started && (
+              <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:8 }}>
+                {[...Array(10)].map((_, i) => (
+                  <div key={i} style={{
+                    width: 10, height: 10, borderRadius:"50%",
+                    background: i < userCount ? "#C0392B" : "rgba(139,26,26,0.25)",
+                    border: i < userCount ? "1px solid #D4AF37" : "1px solid #8B1A1A",
+                    boxShadow: i < userCount ? "0 0 6px rgba(192,57,43,0.6)" : "none",
+                    transition: "all 0.3s",
+                  }}/>
+                ))}
+              </div>
+            )}
+
             {started && (
               <div style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", display:"flex", gap:6 }}>
                 <button className="btn-salva" onClick={saveDialog} style={{ background:"transparent", border:"1px solid #5a3a1a", borderRadius:3, color:"#D4AF37", fontSize:13, padding:"4px 10px", cursor:"pointer", fontFamily:ff }}>💾</button>
@@ -270,11 +257,17 @@ export default function App() {
               </div>
             )}
 
+            {finished && (
+              <div style={{ textAlign:"center", padding:"16px", color:"#8B3333", fontStyle:"italic", fontSize:"clamp(12px,2.5vw,14px)", borderTop:"1px solid #3d0000", marginTop:8 }}>
+                ♥ L'udienza è terminata — clicca il pulsante per una nuova udienza ♥
+              </div>
+            )}
+
             <div ref={bottomRef}/>
           </div>
         </div>
 
-        {started && (
+        {started && !finished && (
           <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", gap:10, alignItems:"flex-end", borderRadius:"0 0 12px 12px", flexShrink:0 }}>
             <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder="Osa parlare alla Regina…" rows={2}
               style={{ flex:1, background:"rgba(25,0,0,0.85)", border:"1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
@@ -284,6 +277,14 @@ export default function App() {
             <button onClick={sendMessage} disabled={loading||!input.trim()}
               style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(10px,2vw,12px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
               ♥ Parla
+            </button>
+          </div>
+        )}
+
+        {started && finished && (
+          <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", justifyContent:"center", borderRadius:"0 0 12px 12px", flexShrink:0 }}>
+            <button onClick={resetDialog} style={{ background:"linear-gradient(135deg,#8B1A1A,#C0392B 50%,#8B1A1A)", border:"2px solid #D4AF37", color:"#D4AF37", fontSize:"clamp(13px,3vw,16px)", fontWeight:"bold", letterSpacing:2, padding:"clamp(10px,2vw,14px) clamp(20px,5vw,40px)", borderRadius:4, cursor:"pointer", fontFamily:ff }}>
+              ♥ &nbsp; Nuova Udienza &nbsp; ♥
             </button>
           </div>
         )}
