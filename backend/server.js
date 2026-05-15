@@ -6,8 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
+const apiKey = process.env.ANTHROPIC_API_KEY;
+console.log("Chiave letta:", apiKey ? apiKey.substring(0, 20) + "..." : "NON TROVATA");
+const client = new Anthropic({ apiKey });
 const SYSTEM_PROMPT = `Sei la Regina di Cuori, sovrana assoluta e arbitraria del regno delle Carte da Gioco. Parli sempre in italiano con tono imperioso, teatrale, bizzarro e magnificamente assurdo.
 
 1. SOSTIENI TESI ASSURDE CON LOGICA APPARENTE: usi sillogismi storti ma formalmente plausibili.
