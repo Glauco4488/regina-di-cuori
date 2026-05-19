@@ -42,9 +42,12 @@ export default function App() {
   const [dots, setDots] = useState(".");
   const [error, setError] = useState(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [isMuted, setIsMuted] = useState(false);
+
   const frameRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const audioRef = useRef(null);
   const ff = "Georgia, 'Palatino Linotype', Palatino, serif";
 
   useEffect(() => {
@@ -70,6 +73,45 @@ export default function App() {
     return () => clearInterval(id);
   }, [loading]);
 
+  const speakText = async (text) => {
+    if (isMuted) return;
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      const res = await fetch(`${BACKEND_URL}/api/speak`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.play();
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+    } catch (e) {
+      console.error("Errore audio:", e);
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  };
+
+  const toggleMute = () => {
+    if (!isMuted) stopAudio();
+    setIsMuted(prev => !prev);
+  };
+
   const callBackend = async (msgs) => {
     const res = await fetch(`${BACKEND_URL}/api/chat`, {
       method:"POST", headers:{ "Content-Type":"application/json" },
@@ -84,6 +126,7 @@ export default function App() {
     try {
       const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
       setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
+      speakText(data.reply);
     } catch(e) { setError(e.message); setStarted(false); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
   };
@@ -98,6 +141,7 @@ export default function App() {
     try {
       const data = await callBackend(history);
       setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
+      speakText(data.reply);
       if (data.isFinale) setFinished(true);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
@@ -116,7 +160,11 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const resetDialog = () => { setMessages([]); setStarted(false); setError(null); setInput(""); setFinished(false); };
+  const resetDialog = () => {
+    stopAudio();
+    setMessages([]); setStarted(false); setError(null); setInput(""); setFinished(false);
+  };
+
   const visible = messages.filter(m => !m.hidden);
   const userCount = visible.filter(m => m.role === "user").length;
 
@@ -131,16 +179,7 @@ export default function App() {
           75%  { text-shadow: 0 0 5px #FFD700, 0 0 18px #FF8C00, 0 0 36px #FF4500, 0 0 56px #FF2200, 0 0 76px #990000; color: #FFA500; }
           100% { text-shadow: 0 0 8px #fff, 0 0 20px #fff, 0 0 40px #FF4500, 0 0 60px #FF4500, 0 0 80px #CC2200; color: #FFD700; }
         }
-        .fire-title {
-          animation: fiamma 1.8s ease-in-out infinite;
-          font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-          font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 0.15em;
-          text-align: center;
-          display: block;
-          width: 100%;
-        }
+        .fire-title { animation: fiamma 1.8s ease-in-out infinite; font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em; text-align: center; display: block; width: 100%; }
         .btn-salva { position:relative; }
         .btn-salva::after { content:"Salva il dialogo"; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:rgba(20,0,0,0.95); color:#D4AF37; padding:3px 8px; border-radius:3px; font-size:10px; white-space:nowrap; border:1px solid #5a3a1a; opacity:0; pointer-events:none; transition:opacity 0.2s; }
         .btn-salva:hover::after { opacity:1; }
@@ -157,7 +196,16 @@ export default function App() {
         <div style={{ position:"relative", zIndex:3, flex:1, display:"flex", flexDirection:"column", padding:"clamp(24px,4vw,40px) clamp(20px,4vw,36px) 0", minHeight:0 }}>
 
           <div style={{ textAlign:"center", marginBottom:"clamp(6px,1.5vw,10px)", flexShrink:0 }}>
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:6, filter:"drop-shadow(0 0 8px #D4AF37)" }}><CrownIcon/></div>
+            <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:6, gap:12 }}>
+              <div style={{ filter:"drop-shadow(0 0 8px #D4AF37)" }}><CrownIcon/></div>
+              <button
+                onClick={toggleMute}
+                title={isMuted ? "Attiva voce" : "Silenzia voce"}
+                style={{ background:"transparent", border:"1px solid #3d1a1a", borderRadius:4, color: isMuted ? "#3d1a1a" : "#D4AF37", fontSize:18, cursor:"pointer", padding:"4px 8px", lineHeight:1, transition:"all 0.2s" }}
+              >
+                {isMuted ? "🔇" : "🔊"}
+              </button>
+            </div>
             <div style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:"bold", color:"#D4AF37", letterSpacing:3, textShadow:"0 0 20px rgba(212,175,55,0.5)", marginBottom:3 }}>La Regina di Cuori</div>
             <div style={{ color:"#8B3333", fontSize:"clamp(10px,2.5vw,13px)", fontStyle:"italic", letterSpacing:1 }}>♥ &nbsp; Sovrana Assoluta del Regno delle Carte &nbsp; ♥</div>
             <div style={{ display:"flex", alignItems:"center", gap:10, margin:"6px 0" }}>
@@ -173,22 +221,13 @@ export default function App() {
             <span className="fire-title" style={{ fontSize:"clamp(20px,4.5vw,40px)" }}>
               ♥ &nbsp; Udienza Reale &nbsp; ♥
             </span>
-
-            {/* Contatore pallini */}
             {started && (
               <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:8 }}>
                 {[...Array(10)].map((_, i) => (
-                  <div key={i} style={{
-                    width: 10, height: 10, borderRadius:"50%",
-                    background: i < userCount ? "#C0392B" : "rgba(139,26,26,0.25)",
-                    border: i < userCount ? "1px solid #D4AF37" : "1px solid #8B1A1A",
-                    boxShadow: i < userCount ? "0 0 6px rgba(192,57,43,0.6)" : "none",
-                    transition: "all 0.3s",
-                  }}/>
+                  <div key={i} style={{ width:10, height:10, borderRadius:"50%", background: i < userCount ? "#C0392B" : "rgba(139,26,26,0.25)", border: i < userCount ? "1px solid #D4AF37" : "1px solid #8B1A1A", boxShadow: i < userCount ? "0 0 6px rgba(192,57,43,0.6)" : "none", transition:"all 0.3s" }}/>
                 ))}
               </div>
             )}
-
             {started && (
               <div style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", display:"flex", gap:6 }}>
                 <button className="btn-salva" onClick={saveDialog} style={{ background:"transparent", border:"1px solid #5a3a1a", borderRadius:3, color:"#D4AF37", fontSize:13, padding:"4px 10px", cursor:"pointer", fontFamily:ff }}>💾</button>
@@ -201,8 +240,7 @@ export default function App() {
 
             {!started && !loading && (
               <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"clamp(12px,2.5vw,20px)", padding:"clamp(4px,1vw,12px) 0" }}>
-                <video autoPlay loop muted playsInline
-                  style={{ width:"clamp(200px,40vw,380px)", borderRadius:14, border:"2px solid #8B1A1A", boxShadow:"0 0 50px rgba(192,57,43,0.6), 0 0 100px rgba(100,0,0,0.4)" }}>
+                <video autoPlay loop muted playsInline style={{ width:"clamp(200px,40vw,380px)", borderRadius:14, border:"2px solid #8B1A1A", boxShadow:"0 0 50px rgba(192,57,43,0.6), 0 0 100px rgba(100,0,0,0.4)" }}>
                   <source src="/regina.mp4" type="video/mp4"/>
                 </video>
                 <div style={{ color:"#6b3333", fontStyle:"italic", fontSize:"clamp(13px,3vw,16px)", textAlign:"center", lineHeight:1.9 }}>

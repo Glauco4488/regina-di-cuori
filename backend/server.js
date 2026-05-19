@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const Anthropic = require("@anthropic-ai/sdk");
@@ -6,9 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
-console.log("Chiave letta:", apiKey ? apiKey.substring(0, 20) + "..." : "NON TROVATA");
-const client = new Anthropic({ apiKey });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const VOICE_ID = "PGzgufLTCZyBEIdThUDC";
+
 const SYSTEM_PROMPT = `Sei la Regina di Cuori, sovrana assoluta e arbitraria del regno delle Carte da Gioco. Parli sempre in italiano con tono imperioso, teatrale, bizzarro e magnificamente assurdo.
 
 1. SOSTIENI TESI ASSURDE CON LOGICA APPARENTE: usi sillogismi storti ma formalmente plausibili.
@@ -54,8 +56,46 @@ app.post("/api/chat", async (req, res) => {
     const reply = removeAsterisks(response.content[0].text);
     res.json({ reply, isFinale: isLastMessage });
   } catch (error) {
-    console.error("Errore API:", error.message);
+    console.error("Errore API Anthropic:", error.message);
     res.status(500).json({ error: "Errore del server" });
+  }
+});
+
+app.post("/api/speak", async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "Testo mancante" });
+  try {
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": process.env.ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.45,
+            similarity_boost: 0.80,
+            style: 0.55,
+            use_speaker_boost: true,
+          },
+        }),
+      }
+    );
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`ElevenLabs: ${response.status} — ${errText}`);
+    }
+    const audioBuffer = await response.arrayBuffer();
+    res.set("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(audioBuffer));
+  } catch (error) {
+    console.error("Errore ElevenLabs:", error.message);
+    res.status(500).json({ error: "Errore TTS" });
   }
 });
 
