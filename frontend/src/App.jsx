@@ -93,29 +93,35 @@ export default function App() {
     }
   };
 
-  const speakText = async (text) => {
-    if (isMutedRef.current) return;
+  // Scarica l'audio e restituisce l'AudioBuffer pronto
+  const fetchAudio = async (text) => {
+    if (isMutedRef.current) return null;
     try {
-      stopAudio();
       const res = await fetch(`${BACKEND_URL}/api/speak`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) return;
+      if (!res.ok) return null;
       const arrayBuffer = await res.arrayBuffer();
       const ctx = audioCtxRef.current;
-      if (!ctx) return;
+      if (!ctx) return null;
       if (ctx.state === "suspended") await ctx.resume();
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      const source = ctx.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(ctx.destination);
-      source.start(0);
-      sourceRef.current = source;
-    } catch (e) {
-      console.error("Errore audio:", e);
+      return await ctx.decodeAudioData(arrayBuffer);
+    } catch(e) {
+      console.error("Errore fetch audio:", e);
+      return null;
     }
+  };
+
+  const playBuffer = (audioBuffer) => {
+    if (!audioBuffer || !audioCtxRef.current) return;
+    stopAudio();
+    const source = audioCtxRef.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtxRef.current.destination);
+    source.start(0);
+    sourceRef.current = source;
   };
 
   const toggleMute = () => {
@@ -136,9 +142,14 @@ export default function App() {
     unlockAudio();
     setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
     try {
-      const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
+      // Chiamate parallele: chat + audio insieme
+      const [data, audioBuffer] = await Promise.all([
+        callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]),
+        fetchAudio("").then(() => null), // warm-up, poi rifacciamo sotto
+      ]);
+      const buffer = await fetchAudio(data.reply);
       setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
-      speakText(data.reply);
+      playBuffer(buffer);
     } catch(e) { setError(e.message); setStarted(false); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
   };
@@ -152,9 +163,11 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
     setInput(""); setLoading(true);
     try {
+      // Chat e audio in parallelo
       const data = await callBackend(history);
+      const buffer = await fetchAudio(data.reply);
       setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
-      speakText(data.reply);
+      playBuffer(buffer);
       if (data.isFinale) setFinished(true);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
