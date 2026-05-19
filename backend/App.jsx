@@ -47,8 +47,12 @@ export default function App() {
   const frameRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
-  const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const sourceRef = useRef(null);
+  const isMutedRef = useRef(false);
   const ff = "Georgia, 'Palatino Linotype', Palatino, serif";
+
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
   useEffect(() => {
     document.body.style.cssText = "margin:0;padding:0;background:#0d0000;height:100%;";
@@ -73,37 +77,45 @@ export default function App() {
     return () => clearInterval(id);
   }, [loading]);
 
+  // Sblocca AudioContext durante il gesto utente (prima di qualsiasi await)
+  const unlockAudio = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+  };
+
+  const stopAudio = () => {
+    if (sourceRef.current) {
+      try { sourceRef.current.stop(); } catch(e) {}
+      sourceRef.current = null;
+    }
+  };
+
   const speakText = async (text) => {
-    if (isMuted) return;
+    if (isMutedRef.current) return;
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      stopAudio();
       const res = await fetch(`${BACKEND_URL}/api/speak`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.play();
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-      };
+      const arrayBuffer = await res.arrayBuffer();
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === "suspended") await ctx.resume();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      sourceRef.current = source;
     } catch (e) {
       console.error("Errore audio:", e);
-    }
-  };
-
-  const stopAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
     }
   };
 
@@ -122,6 +134,7 @@ export default function App() {
   };
 
   const startAudience = async () => {
+    unlockAudio(); // <- prima di qualsiasi await!
     setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
     try {
       const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
@@ -133,6 +146,7 @@ export default function App() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading || finished) return;
+    unlockAudio(); // <- prima di qualsiasi await!
     setError(null);
     const userMsg = { role:"user", content:input.trim() };
     const history = [...messages.filter(m => !m.hidden), userMsg];
@@ -198,11 +212,8 @@ export default function App() {
           <div style={{ textAlign:"center", marginBottom:"clamp(6px,1.5vw,10px)", flexShrink:0 }}>
             <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:6, gap:12 }}>
               <div style={{ filter:"drop-shadow(0 0 8px #D4AF37)" }}><CrownIcon/></div>
-              <button
-                onClick={toggleMute}
-                title={isMuted ? "Attiva voce" : "Silenzia voce"}
-                style={{ background:"transparent", border:"1px solid #3d1a1a", borderRadius:4, color: isMuted ? "#3d1a1a" : "#D4AF37", fontSize:18, cursor:"pointer", padding:"4px 8px", lineHeight:1, transition:"all 0.2s" }}
-              >
+              <button onClick={toggleMute} title={isMuted ? "Attiva voce" : "Silenzia voce"}
+                style={{ background:"transparent", border:"1px solid #3d1a1a", borderRadius:4, color: isMuted ? "#3d1a1a" : "#D4AF37", fontSize:18, cursor:"pointer", padding:"4px 8px", lineHeight:1, transition:"all 0.2s" }}>
                 {isMuted ? "🔇" : "🔊"}
               </button>
             </div>
