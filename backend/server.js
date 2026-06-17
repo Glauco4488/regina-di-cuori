@@ -61,9 +61,10 @@ app.post("/api/chat", async (req, res) => {
     res.status(500).json({ error: "Errore del server" });
   }
 });
-if (!text || text.trim() === "") {
-  return res.setHeader("Content-Type", "audio/mpeg").send(Buffer.alloc(0));
-}
+
+app.post("/api/speak", async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "Testo mancante" });
   try {
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
