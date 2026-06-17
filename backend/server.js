@@ -64,13 +64,7 @@ app.post("/api/chat", async (req, res) => {
 
 app.post("/api/speak", async (req, res) => {
   const { text } = req.body;
-  
-  // Se il testo è vuoto, ritorna un audio vuoto (per warmup del browser)
-  if (!text || text.trim() === "") {
-    res.set("Content-Type", "audio/mpeg");
-    return res.send(Buffer.alloc(0));
-  }
-  
+  if (!text) return res.status(400).json({ error: "Testo mancante" });
   try {
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
@@ -104,4 +98,9 @@ app.post("/api/speak", async (req, res) => {
     console.error("Errore ElevenLabs:", error.message);
     res.status(500).json({ error: "Errore TTS" });
   }
+});
+
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => {
+  console.log(`Regina in ascolto sulla porta ${PORT}`);
 });
