@@ -143,11 +143,8 @@ export default function App() {
     setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
     try {
       // Chiamate parallele: chat + audio insieme
-      const [data, audioBuffer] = await Promise.all([
-        callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]),
-        fetchAudio("").then(() => null), // warm-up, poi rifacciamo sotto
-      ]);
-      const buffer = await fetchAudio(data.reply);
+      const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
+const buffer = await fetchAudio(data.reply);
       setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
       playBuffer(buffer);
     } catch(e) { setError(e.message); setStarted(false); }
