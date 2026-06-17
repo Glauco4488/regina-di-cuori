@@ -94,7 +94,11 @@ export default function App() {
   };
 
   // Scarica l'audio e restituisce l'AudioBuffer pronto
-  const fetchAudio = async (text) => {
+     const fetchAudio = async (text) => {
+  console.log("Mandando testo:", text, "lunghezza:", text.length);  // ← Aggiungi questa riga
+  if (isMutedRef.current) return null;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/speak`, {
     if (isMutedRef.current) return null;
     try {
       const res = await fetch(`${BACKEND_URL}/api/speak`, {
@@ -143,8 +147,14 @@ export default function App() {
     setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
     try {
       // Chiamate parallele: chat + audio insieme
-      const data = await callBackend([{ role:"user", content:"Presentati e inizia l'udienza." }]);
+      const data = await callBackend(history);
+console.log("Response da /api/chat:", data); // ← Aggiungi questo log
+if (!data.reply) {
+  setError("Errore: nessuna risposta dalla Regina");
+  return;
+}
 const buffer = await fetchAudio(data.reply);
+setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
       setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
       playBuffer(buffer);
     } catch(e) { setError(e.message); setStarted(false); }
