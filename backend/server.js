@@ -62,10 +62,10 @@ function fixStressForSpeech(text) {
   }
   return result;
 }
-
 app.post("/api/chat", async (req, res) => {
   const { messages } = req.body;
-  const userMessages = messages.filter(m => m.role === "user");
+  const cleanMessages = messages.map(({ role, content }) => ({ role, content }));
+  const userMessages = cleanMessages.filter(m => m.role === "user");
   const isLastMessage = userMessages.length >= 10;
   try {
     const systemToUse = isLastMessage
@@ -75,7 +75,7 @@ app.post("/api/chat", async (req, res) => {
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: systemToUse,
-      messages: messages,
+      messages: cleanMessages,
     });
     const reply = removeAsterisks(response.content[0].text);
     res.json({ reply, isFinale: isLastMessage });
