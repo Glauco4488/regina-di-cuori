@@ -33,16 +33,90 @@ const CrownIcon = () => (
   </svg>
 );
 
-// Ornamento d'angolo in stile cornice vittoriana (foglia d'acanto stilizzata)
-const FrameCorner = ({ rotate }) => (
-  <svg width="46" height="46" viewBox="0 0 46 46" fill="none" style={{ position:"absolute", transform:`rotate(${rotate}deg)` }}>
-    <path d="M2,2 Q2,20 18,20 Q6,20 6,34 Q6,44 2,44" fill="none" stroke="#F4E4BC" strokeWidth="2.5"/>
-    <path d="M2,2 Q2,20 18,20 Q6,20 6,34 Q6,44 2,44" fill="none" stroke="#8B6914" strokeWidth="1" strokeDasharray="1,3"/>
-    <circle cx="18" cy="20" r="4" fill="#F4E4BC" stroke="#8B6914" strokeWidth="1"/>
-    <circle cx="18" cy="20" r="1.5" fill="#C0392B"/>
-    <path d="M2,2 L10,2 M2,2 L2,10" stroke="#F4E4BC" strokeWidth="2.5" strokeLinecap="round"/>
-  </svg>
-);
+// Cornice dorata realistica in stile quadro da museo: modanatura a più livelli
+// (fascia esterna bombata, gola incisa, perlinatura, fascia concava) con gradienti
+// che simulano luce/ombra reali, più medaglioni scolpiti agli angoli.
+const RealisticGildedFrame = ({ width, height }) => {
+  if (!width || !height) return null;
+  const margin = 34;
+  const beadSpacing = 13;
+
+  const topBeads = [];
+  for (let x = margin; x < width - margin; x += beadSpacing) topBeads.push(x);
+  const sideBeads = [];
+  for (let y = margin; y < height - margin; y += beadSpacing) sideBeads.push(y);
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}
+      style={{ position:"absolute", top:0, left:0, pointerEvents:"none" }}>
+      <defs>
+        <linearGradient id="giltOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="22%" stopColor="#E8C860"/>
+          <stop offset="45%" stopColor="#A9791C"/>
+          <stop offset="62%" stopColor="#E8C860"/>
+          <stop offset="80%" stopColor="#8B6914"/>
+          <stop offset="100%" stopColor="#4a2f08"/>
+        </linearGradient>
+        <linearGradient id="giltCove" x1="100%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="35%" stopColor="#C9973A"/>
+          <stop offset="70%" stopColor="#6b4a0e"/>
+          <stop offset="100%" stopColor="#2e1c05"/>
+        </linearGradient>
+        <linearGradient id="giltInnerLip" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="50%" stopColor="#D4AF37"/>
+          <stop offset="100%" stopColor="#6b4a0e"/>
+        </linearGradient>
+        <radialGradient id="beadGrad" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FFF9E5"/>
+          <stop offset="55%" stopColor="#D4AF37"/>
+          <stop offset="100%" stopColor="#5a3a0a"/>
+        </radialGradient>
+        <radialGradient id="rosetteGrad" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FFF9E5"/>
+          <stop offset="45%" stopColor="#E8C860"/>
+          <stop offset="80%" stopColor="#8B6914"/>
+          <stop offset="100%" stopColor="#3d2808"/>
+        </radialGradient>
+      </defs>
+
+      {/* fascia esterna bombata (ovolo) */}
+      <rect x="0" y="0" width={width} height={height} rx="18" fill="url(#giltOuter)"/>
+      <rect x="0.75" y="0.75" width={width-1.5} height={height-1.5} rx="17" fill="none" stroke="#2e1c05" strokeWidth="1.5"/>
+      {/* incisione */}
+      <rect x="10" y="10" width={width-20} height={height-20} rx="14" fill="none" stroke="#2e1c05" strokeWidth="1.5"/>
+      <rect x="10" y="10" width={width-20} height={height-20} rx="14" fill="none" stroke="#FBF3D4" strokeWidth="0.6" opacity="0.5" transform="translate(0.8,0.8)"/>
+      {/* gola concava */}
+      <rect x="12" y="12" width={width-24} height={height-24} rx="13" fill="url(#giltCove)"/>
+      {/* perlinatura lungo la gola */}
+      {topBeads.map((x,i)=>(<circle key={`t${i}`} cx={x} cy={16} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {topBeads.map((x,i)=>(<circle key={`b${i}`} cx={x} cy={height-16} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {sideBeads.map((y,i)=>(<circle key={`l${i}`} cx={16} cy={y} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {sideBeads.map((y,i)=>(<circle key={`r${i}`} cx={width-16} cy={y} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {/* labbro interno sottile */}
+      <rect x="22" y="22" width={width-44} height={height-44} rx="10" fill="none" stroke="url(#giltInnerLip)" strokeWidth="3"/>
+      <rect x="24.5" y="24.5" width={width-49} height={height-49} rx="9" fill="none" stroke="#2e1c05" strokeWidth="1"/>
+
+      {/* medaglioni scolpiti agli angoli */}
+      {[[0,0],[width,0],[width,height],[0,height]].map(([cx,cy], idx) => (
+        <g key={idx} transform={`translate(${cx},${cy})`}>
+          <circle r="17" fill="url(#rosetteGrad)" stroke="#2e1c05" strokeWidth="1.2"/>
+          <circle r="11" fill="none" stroke="#2e1c05" strokeWidth="0.7"/>
+          <circle r="11" fill="none" stroke="#FBF3D4" strokeWidth="0.4" opacity="0.5"/>
+          {[0,45,90,135,180,225,270,315].map(a => (
+            <ellipse key={a} cx={10.5*Math.cos(a*Math.PI/180)} cy={10.5*Math.sin(a*Math.PI/180)}
+              rx="2.6" ry="1.3" fill="#FBF3D4" opacity="0.85"
+              transform={`rotate(${a} ${10.5*Math.cos(a*Math.PI/180)} ${10.5*Math.sin(a*Math.PI/180)})`}/>
+          ))}
+          <circle r="4.5" fill="#7a1414" stroke="#2e1c05" strokeWidth="0.8"/>
+          <circle r="2" fill="#C0392B"/>
+        </g>
+      ))}
+    </svg>
+  );
+};
 
 // Semi delle carte sparsi come sfondo dentro la cornice principale
 const CARD_SUITS = ["♠", "♥", "♦", "♣"];
@@ -83,11 +157,13 @@ export default function App() {
   const [dots, setDots] = useState(".");
   const [error, setError] = useState(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [outerDims, setOuterDims] = useState({ w: 0, h: 0 });
   const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
 
   const frameRef = useRef(null);
+  const outerFrameRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -114,6 +190,7 @@ export default function App() {
   useEffect(() => {
     const update = () => {
       if (frameRef.current) setDims({ w: frameRef.current.offsetWidth, h: frameRef.current.offsetHeight });
+      if (outerFrameRef.current) setOuterDims({ w: outerFrameRef.current.offsetWidth, h: outerFrameRef.current.offsetHeight });
     };
     update();
     window.addEventListener("resize", update);
@@ -374,25 +451,13 @@ export default function App() {
         .btn-nuova::after { content:"Nuova udienza"; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:rgba(20,0,0,0.95); color:#8B3333; padding:3px 8px; border-radius:3px; font-size:10px; white-space:nowrap; border:1px solid #8B1A1A; opacity:0; pointer-events:none; transition:opacity 0.2s; }
         .btn-nuova:hover::after { opacity:1; }
         body { margin:0; padding:0; background:#0d0000; }
-        .victorian-outer-frame {
-          background: linear-gradient(135deg, #F4E4BC 0%, #D4AF37 15%, #8B6914 35%, #D4AF37 50%, #F4E4BC 60%, #8B6914 80%, #D4AF37 100%);
-          box-shadow:
-            inset 0 0 0 2px #5a3a0a,
-            inset 0 3px 6px rgba(255,255,255,0.5),
-            inset 0 -3px 6px rgba(0,0,0,0.6),
-            0 0 40px rgba(0,0,0,0.7),
-            0 0 90px rgba(0,0,0,0.5);
-        }
       `}</style>
 
-      <div className="victorian-outer-frame" style={{ width:"100%", maxWidth:"calc(820px + 28px)", height:"clamp(528px,calc(90vh + 28px),calc(95vh + 28px))", borderRadius:16, padding:14, position:"relative", boxSizing:"border-box" }}>
+      <div ref={outerFrameRef} style={{ width:"100%", maxWidth:"calc(820px + 44px)", height:"clamp(544px,calc(90vh + 44px),calc(95vh + 44px))", borderRadius:20, padding:22, position:"relative", boxSizing:"border-box", filter:"drop-shadow(0 0 45px rgba(0,0,0,0.75)) drop-shadow(0 0 90px rgba(0,0,0,0.5))" }}>
 
-        <FrameCorner rotate={0}/>
-        <div style={{ position:"absolute", top:0, right:0 }}><FrameCorner rotate={90}/></div>
-        <div style={{ position:"absolute", bottom:0, right:0 }}><FrameCorner rotate={180}/></div>
-        <div style={{ position:"absolute", bottom:0, left:0 }}><FrameCorner rotate={270}/></div>
+        {outerDims.w > 0 && <RealisticGildedFrame width={outerDims.w} height={outerDims.h}/>}
 
-      <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"clamp(500px,90vh,95vh)", position:"relative", display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
+      <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"clamp(500px,90vh,95vh)", position:"relative", zIndex:1, display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
 
         <CardSuitsBackground/>
 
