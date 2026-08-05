@@ -33,7 +33,7 @@ const CrownIcon = () => (
   </svg>
 );
 
-// Semi delle carte sparsi sullo sfondo della pagina, dietro alla cornice principale
+// Semi delle carte sparsi come sfondo dentro la cornice principale
 const CARD_SUITS = ["♠", "♥", "♦", "♣"];
 const BACKGROUND_SUITS = [
   { suit:0, top:"4%",  left:"6%",  size:70,  rot:-18 },
@@ -49,12 +49,12 @@ const BACKGROUND_SUITS = [
 ];
 
 const CardSuitsBackground = () => (
-  <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", overflow:"hidden" }}>
+  <div style={{ position:"absolute", inset:0, zIndex:1, pointerEvents:"none", overflow:"hidden", borderRadius:12 }}>
     {BACKGROUND_SUITS.map((s, i) => (
       <span key={i} style={{
         position:"absolute", top:s.top, left:s.left,
         fontSize:s.size, color: s.suit % 2 === 0 ? "#8B1A1A" : "#D4AF37",
-        opacity:0.12, transform:`rotate(${s.rot}deg)`,
+        opacity:0.16, transform:`rotate(${s.rot}deg)`,
         fontFamily:"Georgia, serif", userSelect:"none",
       }}>
         {CARD_SUITS[s.suit]}
@@ -365,9 +365,9 @@ export default function App() {
         body { margin:0; padding:0; background:#0d0000; }
       `}</style>
 
-      <CardSuitsBackground/>
-
       <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"clamp(500px,90vh,95vh)", position:"relative", display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
+
+        <CardSuitsBackground/>
 
         {dims.w > 0 && <VictorianFrame width={dims.w} height={dims.h}/>}
 
