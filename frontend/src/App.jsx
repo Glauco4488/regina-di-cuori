@@ -33,6 +33,17 @@ const CrownIcon = () => (
   </svg>
 );
 
+// Ornamento d'angolo in stile cornice vittoriana (foglia d'acanto stilizzata)
+const FrameCorner = ({ rotate }) => (
+  <svg width="46" height="46" viewBox="0 0 46 46" fill="none" style={{ position:"absolute", transform:`rotate(${rotate}deg)` }}>
+    <path d="M2,2 Q2,20 18,20 Q6,20 6,34 Q6,44 2,44" fill="none" stroke="#F4E4BC" strokeWidth="2.5"/>
+    <path d="M2,2 Q2,20 18,20 Q6,20 6,34 Q6,44 2,44" fill="none" stroke="#8B6914" strokeWidth="1" strokeDasharray="1,3"/>
+    <circle cx="18" cy="20" r="4" fill="#F4E4BC" stroke="#8B6914" strokeWidth="1"/>
+    <circle cx="18" cy="20" r="1.5" fill="#C0392B"/>
+    <path d="M2,2 L10,2 M2,2 L2,10" stroke="#F4E4BC" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
+
 // Semi delle carte sparsi come sfondo dentro la cornice principale
 const CARD_SUITS = ["♠", "♥", "♦", "♣"];
 const BACKGROUND_SUITS = [
@@ -363,7 +374,23 @@ export default function App() {
         .btn-nuova::after { content:"Nuova udienza"; position:absolute; bottom:-28px; left:50%; transform:translateX(-50%); background:rgba(20,0,0,0.95); color:#8B3333; padding:3px 8px; border-radius:3px; font-size:10px; white-space:nowrap; border:1px solid #8B1A1A; opacity:0; pointer-events:none; transition:opacity 0.2s; }
         .btn-nuova:hover::after { opacity:1; }
         body { margin:0; padding:0; background:#0d0000; }
+        .victorian-outer-frame {
+          background: linear-gradient(135deg, #F4E4BC 0%, #D4AF37 15%, #8B6914 35%, #D4AF37 50%, #F4E4BC 60%, #8B6914 80%, #D4AF37 100%);
+          box-shadow:
+            inset 0 0 0 2px #5a3a0a,
+            inset 0 3px 6px rgba(255,255,255,0.5),
+            inset 0 -3px 6px rgba(0,0,0,0.6),
+            0 0 40px rgba(0,0,0,0.7),
+            0 0 90px rgba(0,0,0,0.5);
+        }
       `}</style>
+
+      <div className="victorian-outer-frame" style={{ width:"100%", maxWidth:"calc(820px + 28px)", height:"clamp(528px,calc(90vh + 28px),calc(95vh + 28px))", borderRadius:16, padding:14, position:"relative", boxSizing:"border-box" }}>
+
+        <FrameCorner rotate={0}/>
+        <div style={{ position:"absolute", top:0, right:0 }}><FrameCorner rotate={90}/></div>
+        <div style={{ position:"absolute", bottom:0, right:0 }}><FrameCorner rotate={180}/></div>
+        <div style={{ position:"absolute", bottom:0, left:0 }}><FrameCorner rotate={270}/></div>
 
       <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"clamp(500px,90vh,95vh)", position:"relative", display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
 
@@ -515,6 +542,7 @@ export default function App() {
             </button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
