@@ -290,10 +290,6 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
           <div style={{ textAlign:"center", marginBottom:"clamp(6px,1.5vw,10px)", flexShrink:0 }}>
             <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:6, gap:12 }}>
               <div style={{ filter:"drop-shadow(0 0 8px #D4AF37)" }}><CrownIcon/></div>
-              <button onClick={toggleMute} title={isMuted ? "Attiva voce" : "Silenzia voce"}
-                style={{ background:"transparent", border:"1px solid #3d1a1a", borderRadius:4, color: isMuted ? "#3d1a1a" : "#D4AF37", fontSize:18, cursor:"pointer", padding:"4px 8px", lineHeight:1, transition:"all 0.2s" }}>
-                {isMuted ? "🔇" : "🔊"}
-              </button>
             </div>
             <div style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:"bold", color:"#D4AF37", letterSpacing:3, textShadow:"0 0 20px rgba(212,175,55,0.5)", marginBottom:3 }}>La Regina di Cuori</div>
             <div style={{ color:"#8B3333", fontSize:"clamp(10px,2.5vw,13px)", fontStyle:"italic", letterSpacing:1 }}>♥ &nbsp; Sovrana Assoluta del Regno delle Carte &nbsp; ♥</div>
@@ -407,6 +403,10 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
                 {isListening ? "⏺" : "🎙"}
               </button>
             )}
+            <button onClick={toggleMute} title={isMuted ? "Attiva voce" : "Silenzia voce"}
+              style={{ background:"rgba(80,20,20,0.5)", border:"1px solid #D4AF37", borderRadius:4, color: isMuted ? "#6b3333" : "#D4AF37", fontSize:"clamp(15px,3.5vw,18px)", padding:"clamp(10px,2vw,12px) clamp(12px,2.5vw,16px)", cursor:"pointer", fontFamily:ff, lineHeight:1 }}>
+              {isMuted ? "🔇" : "🔊"}
+            </button>
             <button onClick={sendMessage} disabled={loading||!input.trim()}
               style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(10px,2vw,12px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
               ♥ Parla
