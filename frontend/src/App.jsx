@@ -43,6 +43,8 @@ export default function App() {
   const [error, setError] = useState(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const [isMuted, setIsMuted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(true);
 
   const frameRef = useRef(null);
   const bottomRef = useRef(null);
@@ -50,9 +52,15 @@ export default function App() {
   const audioCtxRef = useRef(null);
   const sourceRef = useRef(null);
   const isMutedRef = useRef(false);
+  const recognitionRef = useRef(null);
   const ff = "Georgia, 'Palatino Linotype', Palatino, serif";
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setMicSupported(!!SR);
+  }, []);
 
   useEffect(() => {
     document.body.style.cssText = "margin:0;padding:0;background:#0d0000;height:100%;";
@@ -94,11 +102,7 @@ export default function App() {
   };
 
   // Scarica l'audio e restituisce l'AudioBuffer pronto
-     const fetchAudio = async (text) => {
-  console.log("Mandando testo:", text, "lunghezza:", text.length);  // ← Aggiungi questa riga
-  if (isMutedRef.current) return null;
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/speak`, {
+  const fetchAudio = async (text) => {
     if (isMutedRef.current) return null;
     try {
       const res = await fetch(`${BACKEND_URL}/api/speak`, {
@@ -145,9 +149,10 @@ export default function App() {
   const startAudience = async () => {
     unlockAudio();
     setError(null); setStarted(true); setLoading(true); setMessages([]); setFinished(false);
+    const initialHistory = [{ role:"user", content:"Presentati e inizia l'udienza." }];
     try {
       // Chiamate parallele: chat + audio insieme
-      const data = await callBackend(history);
+      const data = await callBackend(initialHistory);
 console.log("Response da /api/chat:", data); // ← Aggiungi questo log
 if (!data.reply) {
   setError("Errore: nessuna risposta dalla Regina");
@@ -163,6 +168,7 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
 
   const sendMessage = async () => {
     if (!input.trim() || loading || finished) return;
+    stopListening();
     unlockAudio();
     setError(null);
     const userMsg = { role:"user", content:input.trim() };
@@ -181,6 +187,54 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
   };
 
   const handleKey = (e) => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch(e) {}
+    }
+    setIsListening(false);
+  };
+
+  const toggleListening = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setMicSupported(false); return; }
+
+    if (isListening) { stopListening(); return; }
+
+    stopAudio(); // non ascoltare mentre la Regina sta ancora parlando
+    unlockAudio();
+
+    const recognition = new SR();
+    recognition.lang = "it-IT";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let finalTranscript = "";
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += transcript;
+        else interim += transcript;
+      }
+      setInput((finalTranscript + interim).trim());
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Errore riconoscimento vocale:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
+  };
 
   const saveDialog = () => {
     const visible = messages.filter(m => !m.hidden);
@@ -211,6 +265,11 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
           50%  { text-shadow: 0 0 12px #fff, 0 0 24px #fff, 0 0 48px #FF3300, 0 0 70px #FF2200, 0 0 92px #CC0000; color: #FFD700; }
           75%  { text-shadow: 0 0 5px #FFD700, 0 0 18px #FF8C00, 0 0 36px #FF4500, 0 0 56px #FF2200, 0 0 76px #990000; color: #FFA500; }
           100% { text-shadow: 0 0 8px #fff, 0 0 20px #fff, 0 0 40px #FF4500, 0 0 60px #FF4500, 0 0 80px #CC2200; color: #FFD700; }
+        }
+        @keyframes pulseMic {
+          0%   { box-shadow: 0 0 8px rgba(192,57,43,0.6); }
+          50%  { box-shadow: 0 0 22px rgba(192,57,43,0.95); }
+          100% { box-shadow: 0 0 8px rgba(192,57,43,0.6); }
         }
         .fire-title { animation: fiamma 1.8s ease-in-out infinite; font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em; text-align: center; display: block; width: 100%; }
         .btn-salva { position:relative; }
@@ -337,11 +396,17 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
 
         {started && !finished && (
           <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", gap:10, alignItems:"flex-end", borderRadius:"0 0 12px 12px", flexShrink:0 }}>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder="Osa parlare alla Regina…" rows={2}
-              style={{ flex:1, background:"rgba(25,0,0,0.85)", border:"1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder={isListening ? "Sto ascoltando…" : "Osa parlare alla Regina…"} rows={2}
+              style={{ flex:1, background:"rgba(25,0,0,0.85)", border: isListening ? "1px solid #D4AF37" : "1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
               onFocus={e => e.target.style.borderColor="#D4AF37"}
               onBlur={e => e.target.style.borderColor="#8B1A1A"}
             />
+            {micSupported && (
+              <button onClick={toggleListening} disabled={loading} title={isListening ? "Ferma ascolto" : "Parla al microfono"}
+                style={{ background: isListening ? "linear-gradient(135deg,#C0392B,#8B1A1A)" : "rgba(80,20,20,0.5)", border:"1px solid #D4AF37", borderRadius:4, color:"#D4AF37", fontSize:"clamp(15px,3.5vw,18px)", padding:"clamp(10px,2vw,12px) clamp(12px,2.5vw,16px)", cursor: loading?"not-allowed":"pointer", fontFamily:ff, boxShadow: isListening ? "0 0 14px rgba(192,57,43,0.7)" : "none", animation: isListening ? "pulseMic 1.2s ease-in-out infinite" : "none" }}>
+                {isListening ? "⏺" : "🎙"}
+              </button>
+            )}
             <button onClick={sendMessage} disabled={loading||!input.trim()}
               style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(10px,2vw,12px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
               ♥ Parla
