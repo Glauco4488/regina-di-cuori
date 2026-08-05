@@ -219,7 +219,8 @@ export default function App() {
     unlockAudio();
     setError(null);
     const userMsg = { role:"user", content:input.trim() };
-    const historyForBackend = [...messages.filter(m => !m.hidden), userMsg];
+    const historyForBackend = [...messages.filter(m => !m.hidden), userMsg]
+      .map(({ role, content }) => ({ role, content }));
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput(""); setLoading(true);
