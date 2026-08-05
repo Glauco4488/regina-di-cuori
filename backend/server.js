@@ -40,6 +40,29 @@ function removeAsterisks(text) {
     .trim();
 }
 
+// Correzioni di accento tonico per ElevenLabs: alcune parole italiane vengono lette
+// con l'accento sbagliato (es. "regia" letta come "regìa" invece di "règia").
+// Si forza la pronuncia corretta scrivendo l'accento esplicito sulla vocale tonica.
+const STRESS_FIXES = {
+  "regia": "règia",
+  "regie": "règie",
+  "regio": "règio",
+  "regi": "règi",
+};
+
+function fixStressForSpeech(text) {
+  let result = text;
+  for (const [wrong, right] of Object.entries(STRESS_FIXES)) {
+    const pattern = new RegExp(`\\b${wrong}\\b`, "gi");
+    result = result.replace(pattern, (match) =>
+      match[0] === match[0].toUpperCase()
+        ? right[0].toUpperCase() + right.slice(1)
+        : right
+    );
+  }
+  return result;
+}
+
 app.post("/api/chat", async (req, res) => {
   const { messages } = req.body;
   const userMessages = messages.filter(m => m.role === "user");
@@ -76,7 +99,7 @@ app.post("/api/speak", async (req, res) => {
           "Accept": "audio/mpeg",
         },
         body: JSON.stringify({
-          text,
+          text: fixStressForSpeech(text),
           model_id: "eleven_multilingual_v2",
           voice_settings: {
             stability: 0.45,
