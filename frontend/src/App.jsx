@@ -333,7 +333,7 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
 
             {!started && !loading && (
               <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"clamp(12px,2.5vw,20px)", padding:"clamp(4px,1vw,12px) 0" }}>
-                <video autoPlay loop muted playsInline style={{ width:"clamp(200px,40vw,380px)", borderRadius:14, border:"2px solid #8B1A1A", boxShadow:"0 0 50px rgba(192,57,43,0.6), 0 0 100px rgba(100,0,0,0.4)" }}>
+                <video autoPlay loop muted playsInline style={{ width:"clamp(260px,55vw,520px)", borderRadius:14, border:"2px solid #8B1A1A", boxShadow:"0 0 50px rgba(192,57,43,0.6), 0 0 100px rgba(100,0,0,0.4)" }}>
                   <source src="/regina.mp4" type="video/mp4"/>
                 </video>
                 <div style={{ color:"#6b3333", fontStyle:"italic", fontSize:"clamp(13px,3vw,16px)", textAlign:"center", lineHeight:1.9 }}>
