@@ -33,6 +33,36 @@ const CrownIcon = () => (
   </svg>
 );
 
+// Semi delle carte sparsi sullo sfondo della pagina, dietro alla cornice principale
+const CARD_SUITS = ["♠", "♥", "♦", "♣"];
+const BACKGROUND_SUITS = [
+  { suit:0, top:"4%",  left:"6%",  size:70,  rot:-18 },
+  { suit:1, top:"12%", left:"88%", size:56,  rot:22 },
+  { suit:2, top:"28%", left:"3%",  size:44,  rot:12 },
+  { suit:3, top:"22%", left:"93%", size:64,  rot:-10 },
+  { suit:1, top:"48%", left:"9%",  size:50,  rot:-24 },
+  { suit:0, top:"55%", left:"90%", size:46,  rot:16 },
+  { suit:3, top:"70%", left:"5%",  size:60,  rot:8 },
+  { suit:2, top:"75%", left:"91%", size:54,  rot:-14 },
+  { suit:0, top:"90%", left:"12%", size:40,  rot:20 },
+  { suit:1, top:"92%", left:"85%", size:48,  rot:-8 },
+];
+
+const CardSuitsBackground = () => (
+  <div style={{ position:"fixed", inset:0, zIndex:0, pointerEvents:"none", overflow:"hidden" }}>
+    {BACKGROUND_SUITS.map((s, i) => (
+      <span key={i} style={{
+        position:"absolute", top:s.top, left:s.left,
+        fontSize:s.size, color: s.suit % 2 === 0 ? "#8B1A1A" : "#D4AF37",
+        opacity:0.12, transform:`rotate(${s.rot}deg)`,
+        fontFamily:"Georgia, serif", userSelect:"none",
+      }}>
+        {CARD_SUITS[s.suit]}
+      </span>
+    ))}
+  </div>
+);
+
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -258,7 +288,7 @@ export default function App() {
 
     const recognition = new SR();
     recognition.lang = "it-IT";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
 
     let finalTranscript = "";
@@ -334,6 +364,8 @@ export default function App() {
         .btn-nuova:hover::after { opacity:1; }
         body { margin:0; padding:0; background:#0d0000; }
       `}</style>
+
+      <CardSuitsBackground/>
 
       <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"clamp(500px,90vh,95vh)", position:"relative", display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
 
