@@ -302,6 +302,14 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
 
           {error && <div style={{ marginBottom:8, background:"rgba(180,0,0,0.3)", border:"1px solid #C0392B", borderRadius:6, padding:"8px 14px", color:"#ff9999", fontSize:13, fontStyle:"italic", flexShrink:0 }}>⚠ {error}</div>}
 
+          {started && (
+            <div style={{ display:"flex", justifyContent:"center", marginBottom:8, flexShrink:0 }}>
+              <video autoPlay loop muted playsInline style={{ width:"clamp(70px,14vw,110px)", borderRadius:8, border:"2px solid #8B1A1A", boxShadow:"0 0 18px rgba(192,57,43,0.5)" }}>
+                <source src="/regina.mp4" type="video/mp4"/>
+              </video>
+            </div>
+          )}
+
           <div style={{ borderTop:"1px solid #3d0000", borderBottom:"1px solid #3d0000", marginBottom:8, flexShrink:0, padding:"clamp(6px,1.5vw,10px) 0", position:"relative" }}>
             <span className="fire-title" style={{ fontSize:"clamp(20px,4.5vw,40px)" }}>
               ♥ &nbsp; Udienza Reale &nbsp; ♥
