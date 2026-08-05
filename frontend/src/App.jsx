@@ -53,6 +53,8 @@ export default function App() {
   const sourceRef = useRef(null);
   const isMutedRef = useRef(false);
   const recognitionRef = useRef(null);
+  const revealIntervalRef = useRef(null);
+  const revealTargetRef = useRef(null);
   const ff = "Georgia, 'Palatino Linotype', Palatino, serif";
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
@@ -132,6 +134,47 @@ export default function App() {
     sourceRef.current = source;
   };
 
+  // Completa istantaneamente l'animazione del testo in corso (se presente)
+  const finishActiveReveal = () => {
+    if (revealIntervalRef.current) {
+      clearInterval(revealIntervalRef.current);
+      revealIntervalRef.current = null;
+    }
+    if (revealTargetRef.current) {
+      const { index, text } = revealTargetRef.current;
+      setMessages(prev => {
+        const copy = [...prev];
+        if (copy[index]) copy[index] = { ...copy[index], displayContent: text };
+        return copy;
+      });
+      revealTargetRef.current = null;
+    }
+  };
+
+  // Rivela il testo progressivamente, calibrato sulla durata reale dell'audio
+  const revealText = (index, fullText, durationMs) => {
+    finishActiveReveal();
+    if (!fullText) return;
+    revealTargetRef.current = { index, text: fullText };
+    const start = performance.now();
+    const total = fullText.length;
+    revealIntervalRef.current = setInterval(() => {
+      const elapsed = performance.now() - start;
+      const ratio = Math.min(elapsed / durationMs, 1);
+      const chars = Math.max(1, Math.ceil(total * ratio));
+      setMessages(prev => {
+        const copy = [...prev];
+        if (copy[index]) copy[index] = { ...copy[index], displayContent: fullText.slice(0, chars) };
+        return copy;
+      });
+      if (ratio >= 1) {
+        clearInterval(revealIntervalRef.current);
+        revealIntervalRef.current = null;
+        revealTargetRef.current = null;
+      }
+    }, 35);
+  };
+
   const toggleMute = () => {
     if (!isMuted) stopAudio();
     setIsMuted(prev => !prev);
@@ -153,15 +196,18 @@ export default function App() {
     try {
       // Chiamate parallele: chat + audio insieme
       const data = await callBackend(initialHistory);
-console.log("Response da /api/chat:", data); // ← Aggiungi questo log
-if (!data.reply) {
-  setError("Errore: nessuna risposta dalla Regina");
-  return;
-}
-const buffer = await fetchAudio(data.reply);
-setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
-      setMessages([{ role:"user", content:"Presentati e inizia l'udienza.", hidden:true }, { role:"assistant", content:data.reply }]);
+      if (!data.reply) {
+        setError("Errore: nessuna risposta dalla Regina");
+        return;
+      }
+      const buffer = await fetchAudio(data.reply);
+      setMessages([
+        { role:"user", content:"Presentati e inizia l'udienza.", hidden:true },
+        { role:"assistant", content:data.reply, displayContent:"" },
+      ]);
       playBuffer(buffer);
+      const durationMs = buffer ? buffer.duration * 1000 : Math.max(1500, data.reply.length * 45);
+      revealText(1, data.reply, durationMs);
     } catch(e) { setError(e.message); setStarted(false); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
   };
@@ -169,18 +215,23 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
   const sendMessage = async () => {
     if (!input.trim() || loading || finished) return;
     stopListening();
+    finishActiveReveal();
     unlockAudio();
     setError(null);
     const userMsg = { role:"user", content:input.trim() };
-    const history = [...messages.filter(m => !m.hidden), userMsg];
-    setMessages(prev => [...prev, userMsg]);
+    const historyForBackend = [...messages.filter(m => !m.hidden), userMsg];
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput(""); setLoading(true);
     try {
       // Chat e audio in parallelo
-      const data = await callBackend(history);
+      const data = await callBackend(historyForBackend);
       const buffer = await fetchAudio(data.reply);
-      setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
+      const assistantIndex = newMessages.length;
+      setMessages([...newMessages, { role:"assistant", content:data.reply, displayContent:"" }]);
       playBuffer(buffer);
+      const durationMs = buffer ? buffer.duration * 1000 : Math.max(1500, data.reply.length * 45);
+      revealText(assistantIndex, data.reply, durationMs);
       if (data.isFinale) setFinished(true);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); setTimeout(() => inputRef.current?.focus(), 150); }
@@ -249,6 +300,8 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
 
   const resetDialog = () => {
     stopAudio();
+    if (revealIntervalRef.current) { clearInterval(revealIntervalRef.current); revealIntervalRef.current = null; }
+    revealTargetRef.current = null;
     setMessages([]); setStarted(false); setError(null); setInput(""); setFinished(false);
   };
 
@@ -373,7 +426,7 @@ setMessages(prev => [...prev, { role:"assistant", content:data.reply }]);
                   </div>
                 )}
                 <div style={{ maxWidth:"85%", padding:"clamp(10px,2.5vw,13px) clamp(12px,3vw,18px)", fontSize:"clamp(14px,3.5vw,16px)", lineHeight:1.8, borderRadius:msg.role==="assistant"?"2px 14px 14px 14px":"14px 2px 14px 14px", background:msg.role==="assistant"?"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))":"rgba(18,8,8,0.85)", border:msg.role==="assistant"?"1px solid rgba(212,175,55,0.2)":"1px solid rgba(80,40,40,0.55)", color:msg.role==="assistant"?"#f5e6d3":"#b08080", fontStyle:msg.role==="user"?"italic":"normal" }}>
-                  {msg.content}
+                  {msg.displayContent ?? msg.content}
                 </div>
               </div>
             ))}
