@@ -436,41 +436,41 @@ export default function App() {
             )}
 
             {started && loading && visible.length === 0 && (
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", paddingTop:8 }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop:8 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                   <span style={{ color:"#D4AF37", fontSize:12 }}>♥</span>
                   <span style={{ fontSize:12, letterSpacing:1, color:"#D4AF37" }}>Sua Maestà</span>
                 </div>
-                <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))", border:"1px solid rgba(212,175,55,0.2)", borderRadius:"2px 14px 14px 14px", color:"#D4AF37", fontSize:24, letterSpacing:4 }}>{dots}</div>
+                <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))", border:"1px solid rgba(212,175,55,0.2)", borderRadius:14, color:"#D4AF37", fontSize:24, letterSpacing:4 }}>{dots}</div>
               </div>
             )}
 
             {visible.map((msg,i) => (
-              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:msg.role==="assistant"?"flex-start":"flex-end" }}>
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
                 {msg.role==="assistant" ? (
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                     <span style={{ color:"#D4AF37", fontSize:12 }}>♥</span>
                     <span style={{ fontSize:12, letterSpacing:1, color:"#D4AF37" }}>Sua Maestà</span>
                   </div>
                 ) : (
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5, justifyContent:"flex-end" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                     <span style={{ fontSize:12, letterSpacing:1, color:"#6b5050" }}>Suddito</span>
                     <span style={{ color:"#6b5050", fontSize:12 }}>♠</span>
                   </div>
                 )}
-                <div style={{ maxWidth:"85%", padding:"clamp(10px,2.5vw,13px) clamp(12px,3vw,18px)", fontSize:"clamp(14px,3.5vw,16px)", lineHeight:1.8, borderRadius:msg.role==="assistant"?"2px 14px 14px 14px":"14px 2px 14px 14px", background:msg.role==="assistant"?"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))":"rgba(18,8,8,0.85)", border:msg.role==="assistant"?"1px solid rgba(212,175,55,0.2)":"1px solid rgba(80,40,40,0.55)", color:msg.role==="assistant"?"#f5e6d3":"#b08080", fontStyle:msg.role==="user"?"italic":"normal" }}>
+                <div style={{ maxWidth:"85%", padding:"clamp(10px,2.5vw,13px) clamp(12px,3vw,18px)", fontSize:"clamp(14px,3.5vw,16px)", lineHeight:1.8, borderRadius:14, background:msg.role==="assistant"?"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))":"rgba(18,8,8,0.85)", border:msg.role==="assistant"?"1px solid rgba(212,175,55,0.2)":"1px solid rgba(80,40,40,0.55)", color:msg.role==="assistant"?"#f5e6d3":"#b08080", fontStyle:msg.role==="user"?"italic":"normal", textAlign:"center" }}>
                   {msg.displayContent ?? msg.content}
                 </div>
               </div>
             ))}
 
             {loading && visible.length > 0 && (
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                   <span style={{ color:"#D4AF37", fontSize:12 }}>♥</span>
                   <span style={{ fontSize:12, letterSpacing:1, color:"#D4AF37" }}>Sua Maestà</span>
                 </div>
-                <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))", border:"1px solid rgba(212,175,55,0.2)", borderRadius:"2px 14px 14px 14px", color:"#D4AF37", fontSize:24, letterSpacing:4 }}>{dots}</div>
+                <div style={{ padding:"12px 20px", background:"linear-gradient(135deg,rgba(139,26,26,0.22),rgba(80,0,0,0.28))", border:"1px solid rgba(212,175,55,0.2)", borderRadius:14, color:"#D4AF37", fontSize:24, letterSpacing:4 }}>{dots}</div>
               </div>
             )}
 
