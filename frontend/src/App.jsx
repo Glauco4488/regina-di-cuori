@@ -72,7 +72,6 @@ export default function App() {
   const [dots, setDots] = useState(".");
   const [error, setError] = useState(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
-  const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
 
@@ -81,13 +80,10 @@ export default function App() {
   const inputRef = useRef(null);
   const audioCtxRef = useRef(null);
   const sourceRef = useRef(null);
-  const isMutedRef = useRef(false);
   const recognitionRef = useRef(null);
   const revealIntervalRef = useRef(null);
   const revealTargetRef = useRef(null);
   const ff = "Georgia, 'Palatino Linotype', Palatino, serif";
-
-  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -135,7 +131,6 @@ export default function App() {
 
   // Scarica l'audio e restituisce l'AudioBuffer pronto
   const fetchAudio = async (text) => {
-    if (isMutedRef.current) return null;
     try {
       const res = await fetch(`${BACKEND_URL}/api/speak`, {
         method: "POST",
@@ -203,11 +198,6 @@ export default function App() {
         revealTargetRef.current = null;
       }
     }, 35);
-  };
-
-  const toggleMute = () => {
-    if (!isMuted) stopAudio();
-    setIsMuted(prev => !prev);
   };
 
   const callBackend = async (msgs) => {
@@ -486,25 +476,17 @@ export default function App() {
 
         {started && !finished && (
           <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", gap:10, alignItems:"flex-end", borderRadius:"0 0 12px 12px", flexShrink:0 }}>
-            <div style={{ position:"relative", flex:1 }}>
-              <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder={isListening ? "Sto ascoltando…" : "Osa parlare alla Regina…"} rows={2}
-                style={{ width:"100%", background:"rgba(25,0,0,0.85)", border: isListening ? "1px solid #D4AF37" : "1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 58px clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
-                onFocus={e => e.target.style.borderColor="#D4AF37"}
-                onBlur={e => e.target.style.borderColor="#8B1A1A"}
-              />
-              <div style={{ position:"absolute", top:6, right:6, display:"flex", flexDirection:"column", gap:4 }}>
-                {micSupported && (
-                  <button onClick={toggleListening} disabled={loading} title={isListening ? "Ferma ascolto" : "Parla al microfono"}
-                    style={{ background: isListening ? "linear-gradient(135deg,#C0392B,#8B1A1A)" : "rgba(80,20,20,0.6)", border:"1px solid #D4AF37", borderRadius:4, color:"#D4AF37", fontSize:14, padding:"3px 6px", cursor: loading?"not-allowed":"pointer", fontFamily:ff, lineHeight:1, boxShadow: isListening ? "0 0 10px rgba(192,57,43,0.7)" : "none", animation: isListening ? "pulseMic 1.2s ease-in-out infinite" : "none" }}>
-                    {isListening ? "⏺" : "🎙"}
-                  </button>
-                )}
-                <button onClick={toggleMute} title={isMuted ? "Attiva voce" : "Silenzia voce"}
-                  style={{ background:"rgba(80,20,20,0.6)", border:"1px solid #D4AF37", borderRadius:4, color: isMuted ? "#6b3333" : "#D4AF37", fontSize:14, padding:"3px 6px", cursor:"pointer", fontFamily:ff, lineHeight:1 }}>
-                  {isMuted ? "🔇" : "🔊"}
-                </button>
-              </div>
-            </div>
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder={isListening ? "Sto ascoltando…" : "Osa parlare alla Regina…"} rows={2}
+              style={{ flex:1, background:"rgba(25,0,0,0.85)", border: isListening ? "1px solid #D4AF37" : "1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
+              onFocus={e => e.target.style.borderColor="#D4AF37"}
+              onBlur={e => e.target.style.borderColor="#8B1A1A"}
+            />
+            {micSupported && (
+              <button onClick={toggleListening} disabled={loading} title={isListening ? "Ferma ascolto" : "Parla al microfono"}
+                style={{ background: isListening ? "linear-gradient(135deg,#C0392B,#8B1A1A)" : "rgba(80,20,20,0.5)", border:"1px solid #D4AF37", borderRadius:4, color:"#D4AF37", fontSize:"clamp(15px,3.5vw,18px)", padding:"clamp(10px,2vw,12px) clamp(12px,2.5vw,16px)", cursor: loading?"not-allowed":"pointer", fontFamily:ff, boxShadow: isListening ? "0 0 14px rgba(192,57,43,0.7)" : "none", animation: isListening ? "pulseMic 1.2s ease-in-out infinite" : "none" }}>
+                {isListening ? "⏺" : "🎙"}
+              </button>
+            )}
             <button onClick={sendMessage} disabled={loading||!input.trim()}
               style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(10px,2vw,12px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
               ♥ Parla
