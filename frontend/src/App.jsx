@@ -475,22 +475,24 @@ export default function App() {
         </div>
 
         {started && !finished && (
-          <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", gap:10, alignItems:"flex-end", borderRadius:"0 0 12px 12px", flexShrink:0 }}>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder={isListening ? "Sto ascoltando…" : "Osa parlare alla Regina…"} rows={2}
-              style={{ flex:1, background:"rgba(25,0,0,0.85)", border: isListening ? "1px solid #D4AF37" : "1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
+          <div style={{ position:"relative", zIndex:3, borderTop:"1px solid #3d0000", padding:"clamp(10px,2vw,14px) clamp(20px,4vw,36px)", background:"rgba(8,0,0,0.9)", display:"flex", flexDirection:"column", gap:8, borderRadius:"0 0 12px 12px", flexShrink:0 }}>
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} placeholder={isListening ? "Sto ascoltando…" : "Osa parlare alla Regina…"} rows={3}
+              style={{ width:"100%", background:"rgba(25,0,0,0.85)", border: isListening ? "1px solid #D4AF37" : "1px solid #8B1A1A", borderRadius:4, color:"#f5e6d3", fontSize:"clamp(14px,3.5vw,16px)", padding:"clamp(10px,2vw,12px) 14px", fontFamily:ff, fontStyle:"italic", resize:"none", outline:"none", boxSizing:"border-box" }}
               onFocus={e => e.target.style.borderColor="#D4AF37"}
               onBlur={e => e.target.style.borderColor="#8B1A1A"}
             />
-            {micSupported && (
-              <button onClick={toggleListening} disabled={loading} title={isListening ? "Ferma ascolto" : "Parla al microfono"}
-                style={{ background: isListening ? "linear-gradient(135deg,#C0392B,#8B1A1A)" : "rgba(80,20,20,0.5)", border:"1px solid #D4AF37", borderRadius:4, color:"#D4AF37", fontSize:"clamp(15px,3.5vw,18px)", padding:"clamp(10px,2vw,12px) clamp(12px,2.5vw,16px)", cursor: loading?"not-allowed":"pointer", fontFamily:ff, boxShadow: isListening ? "0 0 14px rgba(192,57,43,0.7)" : "none", animation: isListening ? "pulseMic 1.2s ease-in-out infinite" : "none" }}>
-                {isListening ? "⏺" : "🎙"}
+            <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+              {micSupported && (
+                <button onClick={toggleListening} disabled={loading} title={isListening ? "Ferma ascolto" : "Parla al microfono"}
+                  style={{ background: isListening ? "linear-gradient(135deg,#C0392B,#8B1A1A)" : "rgba(80,20,20,0.5)", border:"1px solid #D4AF37", borderRadius:4, color:"#D4AF37", fontSize:"clamp(15px,3.5vw,18px)", padding:"clamp(8px,1.8vw,10px) clamp(12px,2.5vw,16px)", cursor: loading?"not-allowed":"pointer", fontFamily:ff, boxShadow: isListening ? "0 0 14px rgba(192,57,43,0.7)" : "none", animation: isListening ? "pulseMic 1.2s ease-in-out infinite" : "none" }}>
+                  {isListening ? "⏺" : "🎙"}
+                </button>
+              )}
+              <button onClick={sendMessage} disabled={loading||!input.trim()}
+                style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(8px,1.8vw,10px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
+                ♥ Parla
               </button>
-            )}
-            <button onClick={sendMessage} disabled={loading||!input.trim()}
-              style={{ background:loading||!input.trim()?"rgba(80,20,20,0.5)":"linear-gradient(135deg,#8B1A1A,#C0392B)", border:"1px solid #D4AF37", borderRadius:4, color:loading||!input.trim()?"#6b3333":"#D4AF37", fontSize:"clamp(13px,3vw,15px)", fontWeight:"bold", padding:"clamp(10px,2vw,12px) clamp(14px,3vw,22px)", cursor:loading||!input.trim()?"not-allowed":"pointer", fontFamily:ff, whiteSpace:"nowrap" }}>
-              ♥ Parla
-            </button>
+            </div>
           </div>
         )}
 
