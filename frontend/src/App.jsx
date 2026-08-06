@@ -2,6 +2,27 @@ import { useState, useRef, useEffect } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3002";
 
+const VictorianFrame = ({ width, height }) => (
+  <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}
+    style={{ position:"absolute", top:0, left:0, pointerEvents:"none", zIndex:2 }}>
+    <rect x="4" y="4" width={width-8} height={height-8} rx="12" fill="none" stroke="#D4AF37" strokeWidth="2.5"/>
+    <rect x="12" y="12" width={width-24} height={height-24} rx="8" fill="none" stroke="#8B1A1A" strokeWidth="1"/>
+    <rect x="8" y="8" width={width-16} height={height-16} rx="10" fill="none" stroke="#D4AF37" strokeWidth="0.5" strokeDasharray="6,4"/>
+    <g transform="translate(14,14)"><circle cx="0" cy="0" r="6" fill="#D4AF37" opacity="0.8"/><circle cx="0" cy="0" r="3" fill="#8B1A1A"/><path d="M8,0 Q20,0 20,12" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><path d="M0,8 Q0,20 12,20" fill="none" stroke="#D4AF37" strokeWidth="1.5"/></g>
+    <g transform={`translate(${width-14},14) scale(-1,1)`}><circle cx="0" cy="0" r="6" fill="#D4AF37" opacity="0.8"/><circle cx="0" cy="0" r="3" fill="#8B1A1A"/><path d="M8,0 Q20,0 20,12" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><path d="M0,8 Q0,20 12,20" fill="none" stroke="#D4AF37" strokeWidth="1.5"/></g>
+    <g transform={`translate(14,${height-14}) scale(1,-1)`}><circle cx="0" cy="0" r="6" fill="#D4AF37" opacity="0.8"/><circle cx="0" cy="0" r="3" fill="#8B1A1A"/><path d="M8,0 Q20,0 20,12" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><path d="M0,8 Q0,20 12,20" fill="none" stroke="#D4AF37" strokeWidth="1.5"/></g>
+    <g transform={`translate(${width-14},${height-14}) scale(-1,-1)`}><circle cx="0" cy="0" r="6" fill="#D4AF37" opacity="0.8"/><circle cx="0" cy="0" r="3" fill="#8B1A1A"/><path d="M8,0 Q20,0 20,12" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><path d="M0,8 Q0,20 12,20" fill="none" stroke="#D4AF37" strokeWidth="1.5"/></g>
+    <g transform={`translate(${width/2},6)`}><path d="M-30,0 Q-15,-8 0,0 Q15,-8 30,0" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><circle cx="0" cy="-2" r="4" fill="#D4AF37" opacity="0.9"/><circle cx="0" cy="-2" r="2" fill="#C0392B"/><circle cx="-18" cy="0" r="2" fill="#D4AF37" opacity="0.6"/><circle cx="18" cy="0" r="2" fill="#D4AF37" opacity="0.6"/></g>
+    <g transform={`translate(${width/2},${height-6}) scale(1,-1)`}><path d="M-30,0 Q-15,-8 0,0 Q15,-8 30,0" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><circle cx="0" cy="-2" r="4" fill="#D4AF37" opacity="0.9"/><circle cx="0" cy="-2" r="2" fill="#C0392B"/></g>
+    <g transform={`translate(6,${height/2})`}><path d="M0,-30 Q-8,-15 0,0 Q-8,15 0,30" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><circle cx="-2" cy="0" r="4" fill="#D4AF37" opacity="0.9"/><circle cx="-2" cy="0" r="2" fill="#C0392B"/></g>
+    <g transform={`translate(${width-6},${height/2}) scale(-1,1)`}><path d="M0,-30 Q-8,-15 0,0 Q-8,15 0,30" fill="none" stroke="#D4AF37" strokeWidth="1.5"/><circle cx="-2" cy="0" r="4" fill="#D4AF37" opacity="0.9"/><circle cx="-2" cy="0" r="2" fill="#C0392B"/></g>
+    <text x="24" y="40" fontSize="14" fill="#C0392B" opacity="0.4">♥</text>
+    <text x={width-38} y="40" fontSize="14" fill="#C0392B" opacity="0.4">♦</text>
+    <text x="24" y={height-24} fontSize="14" fill="#8B1A1A" opacity="0.4">♣</text>
+    <text x={width-38} y={height-24} fontSize="14" fill="#8B1A1A" opacity="0.4">♠</text>
+  </svg>
+);
+
 const CrownIcon = () => (
   <svg width="48" height="36" viewBox="0 0 48 36" fill="none">
     <path d="M4 32L8 12L18 22L24 4L30 22L40 12L44 32H4Z" fill="#D4AF37" stroke="#B8960C" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -12,7 +33,92 @@ const CrownIcon = () => (
   </svg>
 );
 
-// Semi delle carte sparsi sullo sfondo della pagina, dietro alla cornice principale
+// Cornice dorata realistica in stile quadro da museo: modanatura a più livelli
+// (fascia esterna bombata, gola incisa, perlinatura, fascia concava) con gradienti
+// che simulano luce/ombra reali, più medaglioni scolpiti agli angoli.
+const RealisticGildedFrame = ({ width, height }) => {
+  if (!width || !height) return null;
+  const margin = 34;
+  const beadSpacing = 13;
+
+  const topBeads = [];
+  for (let x = margin; x < width - margin; x += beadSpacing) topBeads.push(x);
+  const sideBeads = [];
+  for (let y = margin; y < height - margin; y += beadSpacing) sideBeads.push(y);
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}
+      style={{ position:"absolute", top:0, left:0, pointerEvents:"none" }}>
+      <defs>
+        <linearGradient id="giltOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="22%" stopColor="#E8C860"/>
+          <stop offset="45%" stopColor="#A9791C"/>
+          <stop offset="62%" stopColor="#E8C860"/>
+          <stop offset="80%" stopColor="#8B6914"/>
+          <stop offset="100%" stopColor="#4a2f08"/>
+        </linearGradient>
+        <linearGradient id="giltCove" x1="100%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="35%" stopColor="#C9973A"/>
+          <stop offset="70%" stopColor="#6b4a0e"/>
+          <stop offset="100%" stopColor="#2e1c05"/>
+        </linearGradient>
+        <linearGradient id="giltInnerLip" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FBF3D4"/>
+          <stop offset="50%" stopColor="#D4AF37"/>
+          <stop offset="100%" stopColor="#6b4a0e"/>
+        </linearGradient>
+        <radialGradient id="beadGrad" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FFF9E5"/>
+          <stop offset="55%" stopColor="#D4AF37"/>
+          <stop offset="100%" stopColor="#5a3a0a"/>
+        </radialGradient>
+        <radialGradient id="rosetteGrad" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FFF9E5"/>
+          <stop offset="45%" stopColor="#E8C860"/>
+          <stop offset="80%" stopColor="#8B6914"/>
+          <stop offset="100%" stopColor="#3d2808"/>
+        </radialGradient>
+      </defs>
+
+      {/* fascia esterna bombata (ovolo) */}
+      <rect x="0" y="0" width={width} height={height} rx="18" fill="url(#giltOuter)"/>
+      <rect x="0.75" y="0.75" width={width-1.5} height={height-1.5} rx="17" fill="none" stroke="#2e1c05" strokeWidth="1.5"/>
+      {/* incisione */}
+      <rect x="10" y="10" width={width-20} height={height-20} rx="14" fill="none" stroke="#2e1c05" strokeWidth="1.5"/>
+      <rect x="10" y="10" width={width-20} height={height-20} rx="14" fill="none" stroke="#FBF3D4" strokeWidth="0.6" opacity="0.5" transform="translate(0.8,0.8)"/>
+      {/* gola concava */}
+      <rect x="12" y="12" width={width-24} height={height-24} rx="13" fill="url(#giltCove)"/>
+      {/* perlinatura lungo la gola */}
+      {topBeads.map((x,i)=>(<circle key={`t${i}`} cx={x} cy={16} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {topBeads.map((x,i)=>(<circle key={`b${i}`} cx={x} cy={height-16} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {sideBeads.map((y,i)=>(<circle key={`l${i}`} cx={16} cy={y} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {sideBeads.map((y,i)=>(<circle key={`r${i}`} cx={width-16} cy={y} r="2.6" fill="url(#beadGrad)" stroke="#2e1c05" strokeWidth="0.4"/>))}
+      {/* labbro interno sottile */}
+      <rect x="22" y="22" width={width-44} height={height-44} rx="10" fill="none" stroke="url(#giltInnerLip)" strokeWidth="3"/>
+      <rect x="24.5" y="24.5" width={width-49} height={height-49} rx="9" fill="none" stroke="#2e1c05" strokeWidth="1"/>
+
+      {/* medaglioni scolpiti agli angoli */}
+      {[[0,0],[width,0],[width,height],[0,height]].map(([cx,cy], idx) => (
+        <g key={idx} transform={`translate(${cx},${cy})`}>
+          <circle r="17" fill="url(#rosetteGrad)" stroke="#2e1c05" strokeWidth="1.2"/>
+          <circle r="11" fill="none" stroke="#2e1c05" strokeWidth="0.7"/>
+          <circle r="11" fill="none" stroke="#FBF3D4" strokeWidth="0.4" opacity="0.5"/>
+          {[0,45,90,135,180,225,270,315].map(a => (
+            <ellipse key={a} cx={10.5*Math.cos(a*Math.PI/180)} cy={10.5*Math.sin(a*Math.PI/180)}
+              rx="2.6" ry="1.3" fill="#FBF3D4" opacity="0.85"
+              transform={`rotate(${a} ${10.5*Math.cos(a*Math.PI/180)} ${10.5*Math.sin(a*Math.PI/180)})`}/>
+          ))}
+          <circle r="4.5" fill="#7a1414" stroke="#2e1c05" strokeWidth="0.8"/>
+          <circle r="2" fill="#C0392B"/>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+// Semi delle carte sparsi come sfondo dentro la cornice principale
 const CARD_SUITS = ["♠", "♥", "♦", "♣"];
 const BACKGROUND_SUITS = [
   { suit:0, top:"4%",  left:"6%",  size:70,  rot:-18 },
@@ -50,10 +156,14 @@ export default function App() {
   const [finished, setFinished] = useState(false);
   const [dots, setDots] = useState(".");
   const [error, setError] = useState(null);
+  const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [outerDims, setOuterDims] = useState({ w: 0, h: 0 });
   const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
 
+  const frameRef = useRef(null);
+  const outerFrameRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -71,11 +181,20 @@ export default function App() {
     setMicSupported(!!SR);
   }, []);
 
-
   useEffect(() => {
     document.body.style.cssText = "margin:0;padding:0;background:#0d0000;height:100%;";
     document.documentElement.style.cssText = "margin:0;padding:0;background:#0d0000;height:100%;";
     return () => { document.body.style.cssText=""; document.documentElement.style.cssText=""; };
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      if (frameRef.current) setDims({ w: frameRef.current.offsetWidth, h: frameRef.current.offsetHeight });
+      if (outerFrameRef.current) setOuterDims({ w: outerFrameRef.current.offsetWidth, h: outerFrameRef.current.offsetHeight });
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages, loading]);
@@ -333,31 +452,17 @@ export default function App() {
         .btn-nuova:hover::after { opacity:1; }
         body { margin:0; padding:0; background:#0d0000; }
         .app-shell { height:100vh; height:100dvh; }
-        .frame-outer {
-          width:100%;
-          max-width: calc(820px + clamp(12px,4vw,80px) * 2);
-          height: 88vh;
-          height: 88dvh;
-          min-height: calc(400px + clamp(12px,4vw,80px) * 2);
-          max-height: calc(900px + clamp(12px,4vw,80px) * 2);
-          padding: clamp(12px,4vw,80px);
-          box-sizing: border-box;
-          position: relative;
-          border-style: solid;
-          border-width: clamp(12px,4vw,80px);
-          border-image-source: url('/frame-gold.png');
-          border-image-slice: 30;
-          border-image-width: clamp(12px,4vw,80px);
-          border-image-repeat: stretch;
-          filter: drop-shadow(0 0 45px rgba(0,0,0,0.75)) drop-shadow(0 0 90px rgba(0,0,0,0.5));
-        }
       `}</style>
 
-      <div className="frame-outer">
+      <div ref={outerFrameRef} style={{ width:"100%", maxWidth:"calc(820px + 44px)", height:"clamp(400px,88dvh,900px)", borderRadius:20, padding:22, position:"relative", boxSizing:"border-box", filter:"drop-shadow(0 0 45px rgba(0,0,0,0.75)) drop-shadow(0 0 90px rgba(0,0,0,0.5))" }}>
 
-      <div style={{ width:"100%", maxWidth:820, height:"100%", position:"relative", display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
+        {outerDims.w > 0 && <RealisticGildedFrame width={outerDims.w} height={outerDims.h}/>}
+
+      <div ref={frameRef} style={{ width:"100%", maxWidth:820, height:"100%", position:"relative", zIndex:1, display:"flex", flexDirection:"column", background:"linear-gradient(160deg,#1a0000 0%,#2a0000 50%,#1a0008 100%)", borderRadius:12, boxShadow:"0 0 60px rgba(192,57,43,0.2), 0 0 120px rgba(0,0,0,0.8)" }}>
 
         <CardSuitsBackground/>
+
+        {dims.w > 0 && <VictorianFrame width={dims.w} height={dims.h}/>}
 
         <div style={{ position:"relative", zIndex:3, flex:1, display:"flex", flexDirection:"column", padding:"clamp(24px,4vw,40px) clamp(20px,4vw,36px) 0", minHeight:0 }}>
 
